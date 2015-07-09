@@ -13,30 +13,14 @@ This module is for the following use case:
 """
 import logging
 
-from mozci.mozci import backfill_revlist, trigger_range, query_repo_url_from_buildername
-from mozci.sources.buildapi import FAILURE
-from mozci.sources.pushlog import query_revision_info, query_pushid_range
+from mozci.mozci import trigger_range, trigger_job, find_backfill_revlist, \
+    query_repo_url_from_buildername
+from mozci.query_jobs import FAILURE, WARNING
+
 
 LOG = logging.getLogger()
 
-MAX_REVISIONS = 20
-TIMES = 4
-
-
-def find_backfill_revlist(rev, max_revisions, buildername):
-    """Determine which revisions we need to trigger in order to backfill."""
-    repo_url = query_repo_url_from_buildername(buildername)
-    push_info = query_revision_info(repo_url, rev)
-    # A known bad revision
-    end_id = int(push_info["pushid"])  # newest revision
-    # The furthest we will go to find the last good job
-    # We might find a good job before that
-    start_id = end_id - max_revisions + 1
-    revlist = query_pushid_range(repo_url=repo_url,
-                                 start_id=start_id,
-                                 end_id=end_id)
-
-    return backfill_revlist(buildername, revlist)
+MAX_REVISIONS = 5
 
 
 def on_event(data, message, dry_run):
@@ -46,18 +30,37 @@ def on_event(data, message, dry_run):
     buildername = payload["buildername"]
 
     # Backfill a failed job
-    if status == FAILURE:
+    if status in [FAILURE, WARNING]:
         revision = payload["revision"]
-        LOG.info("Failed job found at revision %s. Buildername: %s", revision, buildername)
-        revlist = find_backfill_revlist(revision, MAX_REVISIONS, buildername)
+        LOG.info("**")  # visual separator
+        LOG.info("Failed job found at revision %s. Buildername: %s",
+                 revision, buildername)
+
+        # We want to have 2 jobs for the current revision
+        trigger_job(
+            buildername=buildername,
+            revision=revision,
+            times=2,
+            dry_run=dry_run)
+
+        # We want to assure 1 apperance of each job on the past revisions
+        repo_url = query_repo_url_from_buildername(buildername)
+        revlist = find_backfill_revlist(
+            repo_url=repo_url,
+            revision=revision,
+            max_revisions=MAX_REVISIONS,
+            buildername=buildername)
+
         trigger_range(
-                buildername=buildername,
-                revisions=revlist,
-                times=TIMES,
-                dry_run=dry_run,
+            buildername=buildername,
+            revisions=revlist[1:],
+            times=1,
+            dry_run=dry_run,
         )
     else:
-        LOG.info("%s with status %i. Nothing to be done", buildername, status)
+        # TODO: change this to debug after a testing period
+        LOG.info("'%s' with status %i. Nothing to be done.",
+                 buildername, status)
 
     # We need to ack the message to remove it from our queue
     message.ack()
