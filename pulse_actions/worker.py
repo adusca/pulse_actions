@@ -53,8 +53,10 @@ def run_pulse(exchange, topic, event_handler, dry_run=True):
     LOG.info('Listening on %s, with topic %s', exchange, topic)
 
     while True:
-        pulse.listen()
-
+        try:
+            pulse.listen()
+        except:
+            pass
 
 def main():
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -62,7 +64,7 @@ def main():
     with open(config_path, 'r') as config_file:
         options = json.load(config_file)
 
-    LOG.setLevel(logging.INFO)
+    LOG.setLevel(logging.DEBUG)
     # requests is too noisy
     logging.getLogger("requests").setLevel(logging.WARNING)
 

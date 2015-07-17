@@ -1,4 +1,4 @@
 {
-    "exchange": "exchange/treeherder/v1/job-actions",
-    "topic": "buildbot.#.#"
+    "exchange": "exchange/build/normalized",
+    "topic": "unittest.mozilla-inbound.#"
 }
