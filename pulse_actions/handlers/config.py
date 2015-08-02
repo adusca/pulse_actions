@@ -1,5 +1,6 @@
 import pulse_actions.handlers.treeherder_buildbot as treeherder_buildbot
 import pulse_actions.handlers.treeherder_resultset as treeherder_resultset
+import pulse_actions.handlers.builds as builds
 import pulse_actions.handlers.backfilling as backfilling
 
 
@@ -12,5 +13,8 @@ HANDLERS_BY_EXCHANGE = {
     },
     "exchange/build/normalized": {
         "backfilling": backfilling.on_event
+    },
+    "exchange/build": {
+        "builds_finish": builds.on_builds_finish_event
     }
 }
