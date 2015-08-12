@@ -4,6 +4,7 @@ import os
 import traceback
 
 from pulse_actions.handlers import config, route_functions
+from emails import send_email
 from argparse import ArgumentParser
 
 from mozillapulse.config import PulseConfiguration
@@ -61,7 +62,7 @@ def run_pulse(exchanges, topics, event_handler, topic_base, dry_run):
             pulse.listen()
         except Exception as e:
             traceback.print_exc()
-
+            send_email(traceback.format_exc())
 
 def load_config():
     LOG.setLevel(logging.INFO)
