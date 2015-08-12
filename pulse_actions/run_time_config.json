@@ -10,5 +10,9 @@
     "backfilling":{
         "exchange": "exchange/build/normalized",
         "topic": "unittest.mozilla-inbound.#"
+    },
+    "builds_finish":{
+        "exchange": "exchange/build",
+        "topic": "build.#.finished"
     }
 }
