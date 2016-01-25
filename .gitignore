@@ -6,3 +6,5 @@ dist
 .idea/
 venv/
 .tox/
+logging.txt
+logging_debug.txt
