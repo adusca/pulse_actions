@@ -9,7 +9,11 @@ Exchange documentation:
 import logging
 
 from pulse_actions.publisher import MessageHandler
-from pulse_actions.utils.misc import filter_invalid_builders, get_maxRevisions
+from pulse_actions.utils.misc import (
+    filter_invalid_builders,
+    get_maxRevisions
+    TREEHERDER
+)
 
 from mozci import query_jobs
 from mozci.mozci import manual_backfill
@@ -31,13 +35,6 @@ def on_buildbot_stage_event(data, message, dry_run):
 
 def on_buildbot_event(data, message, dry_run, stage=False):
     """Act upon buildbot events."""
-    # Pulse gives us a job_id and a job_guid, we need request_id.
-    LOG.info("%s action requested by %s on repo_name %s with job_id: %s" % (
-        data['action'],
-        data["requester"],
-        data["project"],
-        data["job_id"])
-    )
     # Cleaning mozci caches
     buildjson.BUILDS_CACHE = {}
     query_jobs.JOBS_CACHE = {}
@@ -46,8 +43,12 @@ def on_buildbot_event(data, message, dry_run, stage=False):
         treeherder_client = TreeherderClient(host='treeherder.allizom.org')
     else:
         treeherder_client = TreeherderClient()
-    repo_name = data['project']
+
+    action = data['action']
     job_id = data['job_id']
+    repo_name = data['project']
+    requester = data['requester']
+
     result = treeherder_client.get_jobs(repo_name, id=job_id)
     # If result not found, ignore
     if not result:
@@ -57,11 +58,21 @@ def on_buildbot_event(data, message, dry_run, stage=False):
         return
 
     result = result[0]
-    buildername = result["ref_data_name"]
     resultset_id = result["result_set_id"]
     result_sets = treeherder_client.get_resultsets(repo_name, id=resultset_id)
     revision = result_sets[0]["revision"]
-    action = data['action']
+
+    treeherder_link = TREEHERDER % {'repo': repo_name, 'revision': resultset['revision']}
+
+    LOG.info("%s action requested by %s on repo_name %s for %s" % (
+        action,
+        data["requester"],
+        data["project"],
+        data["job_id"]
+    )
+    )
+
+    buildername = result["ref_data_name"]
     status = None
 
     buildername = filter_invalid_builders(buildername)
