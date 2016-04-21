@@ -85,10 +85,9 @@ def on_buildbot_event(data, message, dry_run, stage=False):
     # Backfill action
     elif action == "backfill":
         manual_backfill(
-            revision,
-            buildername,
-            max_revisions=get_maxRevisions(buildername),
-            dry_run=dry_run
+            revision=revision,
+            buildername=buildername,
+            dry_run=dry_run,
         )
         if not dry_run:
             status = 'Backfill request sent'

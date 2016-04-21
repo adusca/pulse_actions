@@ -3,7 +3,6 @@ This module helps with functionality which is common to all handlers.
 """
 import logging
 
-from mozci.platforms import get_SETA_info
 from mozci.mozci import valid_builder
 
 LOG = logging.getLogger(__name__)
@@ -21,11 +20,15 @@ def whitelisted_users(requester):
     return requester in (
         'aleth@instantbird.org',
         'archaeopteryx@coole-files.de',
+        'dbaron@dbaron.org',
+        'gijskruitbosch@gmail.com',
+        'james@hoppipolla.co.uk',
+        'josh@joshmatthews.net',
         'mh+mozilla@glandium.org',
         'mozilla@digitalimagecorp.de',
         'nigelbabu@gmail.com',
         'philringnalda@gmail.com',
-        'josh@joshmatthews.net',
+        'ted@mielczarek.org',
     )
 
 
