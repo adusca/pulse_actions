@@ -1,7 +1,7 @@
 import logging
 
-from pulse_actions.publisher import MessageHandler
-from pulse_actions.utils.misc import whitelisted_users, filter_invalid_builders
+from publisher import MessageHandler
+from utils.misc import whitelisted_users, filter_invalid_builders
 
 from mozci import query_jobs
 from mozci.ci_manager import TaskClusterBuildbotManager

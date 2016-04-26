@@ -13,7 +13,7 @@ This module is for the following use case:
 """
 import logging
 
-from pulse_actions.utils.misc import filter_invalid_builders
+from utils.misc import filter_invalid_builders
 
 from mozci import query_jobs
 from mozci.errors import PushlogError

@@ -5,7 +5,7 @@ It might become a real pulse publisher one day.
 """
 import sys
 
-from pulse_actions.authentication import (
+from authentication import (
     get_user_and_password,
     AuthenticationError,
 )

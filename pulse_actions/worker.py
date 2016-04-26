@@ -7,11 +7,11 @@ import traceback
 from argparse import ArgumentParser
 from timeit import default_timer
 
-from pulse_actions.authentication import (
+from authentication import (
     AuthenticationError,
     get_user_and_password,
 )
-from pulse_actions.handlers import config, route_functions
+from handlers import config, route_functions
 
 from mozci.mozci import disable_validations
 from mozci.utils import transfer

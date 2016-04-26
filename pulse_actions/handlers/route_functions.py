@@ -1,6 +1,6 @@
-import pulse_actions.handlers.treeherder_buildbot as treeherder_buildbot
-import pulse_actions.handlers.treeherder_resultset as treeherder_resultset
-import pulse_actions.handlers.treeherder_runnable as treeherder_runnable
+import handlers.treeherder_buildbot as treeherder_buildbot
+import handlers.treeherder_resultset as treeherder_resultset
+import handlers.treeherder_runnable as treeherder_runnable
 
 
 import logging

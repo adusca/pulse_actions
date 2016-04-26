@@ -5,7 +5,7 @@ from mozci.mozci import trigger_all_talos_jobs
 from mozci.ci_manager import BuildAPIManager
 from mozci.sources import buildjson
 from thclient import TreeherderClient
-from pulse_actions.publisher import MessageHandler
+from publisher import MessageHandler
 
 LOG = logging.getLogger(__name__)
 
