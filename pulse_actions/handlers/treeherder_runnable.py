@@ -3,7 +3,6 @@ import logging
 from pulse_actions.utils.misc import whitelisted_users, filter_invalid_builders
 
 from mozci import query_jobs
-from mozci.ci_manager import TaskClusterBuildbotManager
 from mozci.mozci import trigger_job
 from mozci.sources import buildjson, buildbot_bridge
 from thclient import TreeherderClient
@@ -96,7 +95,7 @@ def on_runnable_job_event(data, message, dry_run, stage):
     )
 
     if builders_graph != {}:
-        mgr = TaskClusterBuildbotManager()
+        mgr = buildbot_bridge.TaskClusterBuildbotManager()
         mgr.schedule_graph(
             repo_name=repo_name,
             revision=revision,
