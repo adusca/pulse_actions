@@ -1,6 +1,7 @@
 # Main dependencies
 mozci==0.32.1
 MozillaPulse==1.2.2
+pulse_replay==0.1.0
 
 # Required by MozillaPulse
 amqp==1.4.9

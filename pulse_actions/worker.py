@@ -15,15 +15,31 @@ from pulse_actions.handlers import config, route_functions
 
 from mozci.mozci import disable_validations
 from mozci.utils import transfer
-from mozillapulse.config import PulseConfiguration
-from mozillapulse.consumers import GenericConsumer
+#from mozillapulse.config import PulseConfiguration
+#from mozillapulse.consumers import GenericConsumer
+from replay import create_consumer
+
 # This changes the behaviour of mozci in transfer.py
 transfer.MEMORY_SAVING_MODE = True
 transfer.SHOW_PROGRESS_BAR = False
 
 LOG = None
 
+def main():
+    options = parse_args()
 
+    if options.debug:
+        setup_logging(logging.DEBUG)
+    else:
+        setup_logging(logging.INFO)
+
+    # Disable mozci's validations
+    disable_validations()
+
+    run_exchange_topic(options.topic_base, options.dry_run)
+
+
+'''
 class PulseConsumer(GenericConsumer):
     """
     Creates a consumer object for the given exchange.
@@ -35,6 +51,7 @@ class PulseConsumer(GenericConsumer):
     def __init__(self, exchange, **kwargs):
         super(PulseConsumer, self).__init__(
             PulseConfiguration(**kwargs), exchange, **kwargs)
+'''
 
 
 def run_pulse(exchanges, topics, event_handler, topic_base, dry_run):
@@ -53,13 +70,6 @@ def run_pulse(exchanges, topics, event_handler, topic_base, dry_run):
         print(e.message)
         sys.exit(1)
 
-    pulse_args = {
-        'applabel': label,
-        'topic': topics,
-        'durable': True,
-        'user': user,
-        'password': password
-    }
 
     # Pulse consumer's callback passes only data and message arguments
     # to the function, we need to pass dry-run
@@ -71,7 +81,13 @@ def run_pulse(exchanges, topics, event_handler, topic_base, dry_run):
 
     pulse = PulseConsumer(exchanges,
                           callback=handler_with_dry_run,
-                          **pulse_args)
+                          **{
+                              'applabel': label,
+                              'topic': topics,
+                              'durable': True,
+                              'user': user,
+                              'password': password
+                          }
     LOG.info('Listening on %s, with topic %s', exchanges, topics)
 
     while True:
@@ -163,11 +179,7 @@ def run_exchange_topic(topic_base, dry_run):
 
 def parse_args(argv=None):
     parser = ArgumentParser()
-    parser.add_argument("--topic-base",
-                        required=True,
-                        dest="topic_base",
-                        type=str,
-                        help="Identifier for exchange and topic to be listened to.")
+    parser.add_argument('--config-file', dest="config_file", type=str)
 
     parser.add_argument("--dry-run",
                         action="store_true",
@@ -181,20 +193,6 @@ def parse_args(argv=None):
 
     options = parser.parse_args(argv)
     return options
-
-
-def main():
-    options = parse_args()
-
-    if options.debug:
-        setup_logging(logging.DEBUG)
-    else:
-        setup_logging(logging.INFO)
-
-    # Disable mozci's validations
-    disable_validations()
-
-    run_exchange_topic(options.topic_base, options.dry_run)
 
 
 if __name__ == '__main__':
