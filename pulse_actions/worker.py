@@ -14,7 +14,7 @@ from pulse_actions.utils.log_util import setup_logging
 
 from mozci.mozci import disable_validations
 from mozci.utils import transfer
-from replay import create_consumer
+from replay import create_consumer, replay_messages
 
 # This changes the behaviour of mozci in transfer.py
 transfer.MEMORY_SAVING_MODE = True
@@ -34,7 +34,10 @@ def main():
 
     # Disable mozci's validations
     disable_validations()
-    run_listener(options.config_file, options.dry_run)
+    if not options.replay_file:
+        run_listener(options.config_file, options.dry_run)
+    else:
+        replay_messages(options.replay_file, route, dry_run=True)
 
 
 def route(data, message, dry_run):
@@ -76,6 +79,8 @@ def run_listener(config_file, dry_run=True):
 def parse_args(argv=None):
     parser = ArgumentParser()
     parser.add_argument('--config-file', dest="config_file", type=str)
+    parser.add_argument('--replay-file', dest="replay_file", type=str,
+                        help='You can specify a file with saved pulse_messages to process')
 
     parser.add_argument("--dry-run",
                         action="store_true",
