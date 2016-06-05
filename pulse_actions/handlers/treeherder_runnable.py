@@ -78,6 +78,10 @@ def on_runnable_job_event(data, message, dry_run, stage):
     for b in buildernames:
         LOG.info("- %s" % b)
 
+    # Handle TC tasks separately
+    tc_labels = [x for x in buildernames if x.startswith('TaskLabel==')]
+    buildernames = list(set(buildernames) - set(tc_labels))
+
     buildernames = filter_invalid_builders(buildernames)
 
     # Treeherder can send us invalid builder names
