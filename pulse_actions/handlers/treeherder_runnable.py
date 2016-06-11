@@ -1,10 +1,12 @@
 import logging
+import os
 
 from pulse_actions.utils.misc import whitelisted_users, filter_invalid_builders
 
 from mozci import TaskClusterBuildbotManager, query_jobs
 from mozci.mozci import trigger_job
 from mozci.sources import buildjson, buildbot_bridge
+from mozci.taskcluster import schedule_treeherder_jobs
 from thclient import TreeherderClient
 
 LOG = logging.getLogger(__name__)
@@ -24,6 +26,7 @@ def on_runnable_job_event(data, message, dry_run, treeherder_host, acknowledge):
     requester = data["requester"]
     resultset_id = data["resultset_id"]
     buildernames = data["buildernames"]
+    decisionTaskId = data["decisionTaskId"]
 
     resultset = treeherder_client.get_resultsets(repo_name, id=resultset_id)[0]
     revision = resultset["revision"]
@@ -76,6 +79,17 @@ def on_runnable_job_event(data, message, dry_run, treeherder_host, acknowledge):
     buildernames = list(set(buildernames) - set(tc_labels))
 
     buildernames = filter_invalid_builders(buildernames)
+
+    # Scheduling TaskCluster jobs
+    try:
+        credentials = {
+            "clientId": os.environ("TC_CLIENT_ID"),
+            "accessToken": os.environ("TC_ACCESS_TOKEN")
+        }
+        schedule_treeherder_jobs(tc_labels, decisionTaskId, credentials)
+    except Exception, e:
+        LOG.warning(str(e))
+        raise
 
     # Treeherder can send us invalid builder names
     # https://bugzilla.mozilla.org/show_bug.cgi?id=1242038
