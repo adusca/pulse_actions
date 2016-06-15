@@ -1,5 +1,5 @@
 {
-    "applabel": "['resultset_actions', 'manual_backfill', 'runnable']",
+    "applabel": "worker2",
     "durable": "true",
     "sources": {
         "resultset_actions": {

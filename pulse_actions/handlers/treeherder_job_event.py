@@ -1,10 +1,11 @@
 """
-This module deals with Treeherder's job-actions exchanges.
+This module deals with Treeherder's job actions.
+
+Exchange documentation:
+ https://wiki.mozilla.org/Auto-tools/Projects/Pulse/Exchanges#Treeherder:_Job_Actions
 
 - exchange/treeherder/v1/job-actions on buildbot.#.#.
 - exchange/treeherder-stage/v1/job-actions on buildbot.#.#.
-Exchange documentation:
- https://wiki.mozilla.org/Auto-tools/Projects/Pulse/Exchanges#Treeherder:_Job_Actions
 """
 import logging
 
@@ -18,44 +19,38 @@ from thclient import TreeherderClient
 LOG = logging.getLogger(__name__)
 
 
-def on_buildbot_prod_event(data, message, dry_run):
-    """Act upon events on the production exchange"""
-    return on_buildbot_event(data, message, dry_run, stage=False)
+def on_event(data, message, dry_run, treeherder_host='treeherder.mozilla.org'):
+    """Act upon Treeherder job events.
 
-
-def on_buildbot_stage_event(data, message, dry_run):
-    """Act upon events on the stage exchange"""
-    return on_buildbot_event(data, message, dry_run, stage=True)
-
-
-def on_buildbot_event(data, message, dry_run, stage=False):
-    """Act upon buildbot events."""
+    Return if the outcome was successful or not
+    """
     # Pulse gives us a job_id and a job_guid, we need request_id.
     LOG.info("%s action requested by %s on repo_name %s with job_id: %s" % (
         data['action'],
-        data["requester"],
-        data["project"],
-        data["job_id"])
+        data['requester'],
+        data['project'],
+        data['job_id'])
     )
     # Cleaning mozci caches
     buildjson.BUILDS_CACHE = {}
     query_jobs.JOBS_CACHE = {}
 
-    if stage:
-        treeherder_client = TreeherderClient(host='treeherder.allizom.org')
-    else:
-        treeherder_client = TreeherderClient()
-    repo_name = data['project']
+    treeherder_client = TreeherderClient(host=treeherder_host)
+
     job_id = data['job_id']
-    result = treeherder_client.get_jobs(repo_name, id=job_id)
+    repo_name = data['project']
+
+    # We want to know the status of the job we're processing
+    job = treeherder_client.get_jobs(repo_name, id=job_id)
+
     # If result not found, ignore
-    if not result:
+    if not job:
         LOG.info("We could not find any result for repo_name: %s and "
                  "job_id: %s" % (repo_name, job_id))
-        message.ack()
-        return
+        return False
 
-    result = result[0]
+    # XXX: Determine the structure of the job
+    result = job[0]
     buildername = result["ref_data_name"]
     resultset_id = result["result_set_id"]
     result_sets = treeherder_client.get_resultsets(repo_name, id=resultset_id)
