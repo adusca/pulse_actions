@@ -13,5 +13,8 @@
             "exchange": "exchange/treeherder-stage/v1/resultset-runnable-job-actions",
             "topic": "#"
         }
+    },
+    "pulse_actions": {
+        "treeherder_host": "treeherder.allizom.org"
     }
 }

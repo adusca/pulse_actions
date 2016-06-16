@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import sys
@@ -6,7 +7,7 @@ import traceback
 from argparse import ArgumentParser
 from timeit import default_timer
 
-import pulse_actions.handlers.treeherder_buildbot as treeherder_buildbot
+import pulse_actions.handlers.treeherder_job_event as treeherder_job_event
 import pulse_actions.handlers.treeherder_resultset as treeherder_resultset
 import pulse_actions.handlers.treeherder_runnable as treeherder_runnable
 import pulse_actions.handlers.talos as talos
@@ -33,16 +34,23 @@ def main():
     else:
         LOG = setup_logging(logging.INFO)
 
+    # Load information only relevant to pulse_actions
+    with open(options.config_file, 'r') as file:
+        pulse_actions_config = json.load(file)['pulse_actions']
+
+    treeherder_host = pulse_actions_config['treeherder_host']
+
     # Disable mozci's validations
     disable_validations()
     if options.replay_file:
         replay_messages(options.replay_file, route, dry_run=True)
     else:
         # Normal execution path
-        run_listener(config_file=options.config_file, dry_run=options.dry_run)
+        run_listener(config_file=options.config_file, dry_run=options.dry_run,
+                     treeherder_host=treeherder_host)
 
 
-def route(data, message, dry_run):
+def route(data, message, dry_run, treeherder_host):
     ''' We need to map every exchange/topic to a specific handler.
 
     We return if the request was processed succesfully or not
@@ -50,20 +58,20 @@ def route(data, message, dry_run):
     # XXX: This is not ideal; we should define in the config which exchange uses which handler
     # XXX: Specify here which treeherder host
     if 'job_id' in data:
-        result = treeherder_job_event.on_event(data, message, dry_run)
+        exit_code = treeherder_job_event.on_event(data, message, dry_run, treeherder_host)
     elif 'buildernames' in data:
-        result = treeherder_runnable.on_runnable_job_prod_event(data, message, dry_run)
+        exit_code = treeherder_runnable.on_runnable_job_prod_event(data, message, dry_run)
     elif 'resultset_id' in data:
-        result = treeherder_resultset.on_resultset_action_event(data, message, dry_run)
+        exit_code = treeherder_resultset.on_resultset_action_event(data, message, dry_run)
     elif data['_meta']['exchange'] == 'exchange/build/normalized':
-        result = talos.on_event(data, message, dry_run)
+        exit_code = talos.on_event(data, message, dry_run)
     else:
         LOG.error("Exchange not supported by router (%s)." % data)
 
-    return result
+    return exit_code
 
 
-def run_listener(config_file, dry_run=True):
+def run_listener(config_file, dry_run=True, treeherder_host='treeherder.mozilla.org'):
     # Pulse consumer's callback passes only data and message arguments
     # to the function, we need to pass dry-run to route
     def message_handler(data, message):
@@ -72,7 +80,7 @@ def run_listener(config_file, dry_run=True):
         # XXX: Report the job to Treeherder as running and then as complete
         LOG.info('#### New request ####.')
         start_time = default_timer()
-        result = route(data, message, dry_run)
+        route(data, message, dry_run, treeherder_host)
         if not dry_run:
             message.ack()
 
