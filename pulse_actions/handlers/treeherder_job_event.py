@@ -46,7 +46,8 @@ Sample job from Treeherder:
   u'platform': u'osx-10-10',
   u'platform_option': u'opt',
   u'reason': u'scheduler',
-  u'ref_data_name': u'Rev7 MacOSX Yosemite 10.10.5 mozilla-inbound opt test mochitest-e10s-browser-chrome-2',
+  u'ref_data_name':
+      u'Rev7 MacOSX Yosemite 10.10.5 mozilla-inbound opt test mochitest-e10s-browser-chrome-2',
   u'result': u'testfailed',
   u'result_set_id': 33460,
   u'running_eta': 588,
@@ -106,7 +107,12 @@ def on_event(data, message, dry_run, treeherder_host):
         job_id
     )
 
-    LOG.info("{} action requested by {} for '{}'".format(action, data['requester'], buildername))
+    LOG.info("{} action requested by {} for '{}' - link {}".format(
+        action,
+        data['requester'],
+        buildername,
+        link_to_job,
+    ))
 
     buildername = filter_invalid_builders(buildername)
 

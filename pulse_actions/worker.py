@@ -23,7 +23,7 @@ from mozci.utils import transfer
 from replay import create_consumer, replay_messages
 
 # This changes the behaviour of mozci in transfer.py
-transfer.MEMORY_SAVING_MODE = True
+transfer.MEMORY_SAVING_MODE = False
 transfer.SHOW_PROGRESS_BAR = False
 
 DRY_RUN = True
@@ -39,6 +39,9 @@ def main():
         LOG = setup_logging(logging.DEBUG)
     else:
         LOG = setup_logging(logging.INFO)
+
+    if options.memory_saving:
+        transfer.MEMORY_SAVING_MODE = True
 
     DRY_RUN = options.dry_run
     if options.config_file:
@@ -108,9 +111,11 @@ def route(data, message, dry_run, treeherder_host):
     if 'job_id' in data:
         exit_code = treeherder_job_event.on_event(data, message, dry_run, treeherder_host)
     elif 'buildernames' in data:
-        exit_code = treeherder_runnable.on_runnable_job_prod_event(data, message, dry_run)
+        exit_code = treeherder_runnable.on_runnable_job_event(data, message, dry_run,
+                                                              treeherder_host)
     elif 'resultset_id' in data:
-        exit_code = treeherder_resultset.on_resultset_action_event(data, message, dry_run)
+        exit_code = treeherder_resultset.on_resultset_action_event(data, message, dry_run,
+                                                                   treeherder_host)
     elif data['_meta']['exchange'] == 'exchange/build/normalized':
         exit_code = talos.on_event(data, message, dry_run)
     else:
@@ -148,6 +153,9 @@ def parse_args(argv=None):
 
     parser.add_argument('--replay-file', dest="replay_file", type=str,
                         help='You can specify a file with saved pulse_messages to process')
+
+    parser.add_argument('--memory-saving', dest="memory_saving", default=False,
+                        help='Enable memory saving. It is good for Heroku')
 
     parser.add_argument('--treeherder-host', dest="treeherder_host", type=str,
                         default='treeherder.mozilla.org',

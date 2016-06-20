@@ -36,7 +36,11 @@ def on_runnable_job_event(data, message, dry_run, treeherder_host):
     author = resultset["author"]
     status = None
 
-    treeherder_link = TREEHERDER % {'host': treeherder_host, 'repo': repo_name, 'revision': resultset['revision']}
+    treeherder_link = TREEHERDER % {
+        'host': treeherder_host,
+        'repo': repo_name,
+        'revision': resultset['revision']
+    }
 
     message_sender = MessageHandler()
     if not (requester.endswith('@mozilla.com') or author == requester or

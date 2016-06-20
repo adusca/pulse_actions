@@ -38,12 +38,14 @@ def setup_logging(logging_level):
 
     # Let's use the root logger
     LOG = logging.getLogger()
+    # This line helps set the root logger's level independent of other handlers
+    LOG.setLevel(logging.DEBUG)
 
     # Handler - Output to console (this is the output for Papertrail)
     console = logging.StreamHandler()
     console.setLevel(logging_level)
     # No need to track asctime as Papertrail logs times
-    formatter = logging.Formatter('%(name)s\t %(levelname)s:\t %(message)s')
+    formatter = logging.Formatter('%(name)s\t %(message)s')
     console.setFormatter(formatter)
     LOG.addHandler(console)
 
