@@ -69,7 +69,7 @@ from thclient import TreeherderClient
 LOG = logging.getLogger(__name__.split('.')[-1])
 
 
-def on_event(data, message, dry_run, treeherder_host='treeherder.mozilla.org'):
+def on_event(data, message, dry_run, treeherder_host):
     """Act upon Treeherder job events.
 
     Return if the outcome was successful or not
