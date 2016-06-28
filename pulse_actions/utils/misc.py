@@ -12,9 +12,6 @@ BUILDERNAME_REPLACEMENTS = [
     ('TB Rev5 MacOSX Yosemite 10.10', 'TB Rev7 MacOSX Yosemite 10.10.5'),
 ]
 
-def get_maxRevisions(buildername):
-    return get_SETA_info(buildername)
-
 
 def whitelisted_users(requester):
     return requester in (
