@@ -1,14 +1,12 @@
 import logging
 
-from pulse_actions.publisher import MessageHandler
 from pulse_actions.utils.misc import (
     filter_invalid_builders,
     whitelisted_users,
     TREEHERDER
 )
 
-from mozci import query_jobs
-from mozci.ci_manager import TaskClusterBuildbotManager
+from mozci import TaskClusterBuildbotManager, query_jobs
 from mozci.mozci import trigger_job
 from mozci.sources import buildjson, buildbot_bridge
 from thclient import TreeherderClient
@@ -17,23 +15,12 @@ LOG = logging.getLogger(__name__)
 MEMORY_SAVING_MODE = True
 
 
-def on_runnable_job_stage_event(data, message, dry_run):
-    return on_runnable_job_event(data, message, dry_run, stage=True)
-
-
-def on_runnable_job_prod_event(data, message, dry_run):
-    return on_runnable_job_event(data, message, dry_run, stage=False)
-
-
-def on_runnable_job_event(data, message, dry_run, stage):
+def on_runnable_job_event(data, message, dry_run, treeherder_host, acknowledge):
     # Cleaning mozci caches
     buildjson.BUILDS_CACHE = {}
     query_jobs.JOBS_CACHE = {}
 
-    if stage:
-        treeherder_client = TreeherderClient(host='treeherder.allizom.org')
-    else:
-        treeherder_client = TreeherderClient()
+    treeherder_client = TreeherderClient(host=treeherder_host)
 
     # Grabbing data received over pulse
     repo_name = data["project"]
@@ -44,17 +31,25 @@ def on_runnable_job_event(data, message, dry_run, stage):
     resultset = treeherder_client.get_resultsets(repo_name, id=resultset_id)[0]
     revision = resultset["revision"]
     author = resultset["author"]
-    status = None
 
-    treeherder_link = TREEHERDER % {'repo': repo_name, 'revision': resultset['revision']}
+    treeherder_link = TREEHERDER % {
+        'host': treeherder_host,
+        'repo': repo_name,
+        'revision': resultset['revision']
+    }
 
-    message_sender = MessageHandler()
+    if not (requester.endswith('@mozilla.com') or author == requester or
+            whitelisted_users(requester)):
+        # We want to see this in the alerts
+        LOG.error("Notice that we're letting %s schedule jobs for %s." % (requester,
+                                                                          treeherder_link))
+    '''
     # Everyone can press the button, but only authorized users can trigger jobs
     # TODO: remove this when proper LDAP identication is set up on TH
     if not (requester.endswith('@mozilla.com') or author == requester or
             whitelisted_users(requester)):
 
-        if not dry_run:
+        if acknowledge:
             # Remove message from pulse queue
             message.ack()
 
@@ -72,6 +67,7 @@ def on_runnable_job_event(data, message, dry_run, stage):
         LOG.error("Requester %s is not allowed to trigger jobs on %s." %
                   (requester, treeherder_link))
         return  # Raising an exception adds too much noise
+    '''
 
     LOG.info("New jobs requested by %s for %s" % (requester, treeherder_link))
     LOG.info("List of builders:")
@@ -83,7 +79,7 @@ def on_runnable_job_event(data, message, dry_run, stage):
     # Treeherder can send us invalid builder names
     # https://bugzilla.mozilla.org/show_bug.cgi?id=1242038
     if buildernames is None:
-        if not dry_run:
+        if acknowledge:
             # We need to ack the message to remove it from our queue
             message.ack()
         return
@@ -95,7 +91,7 @@ def on_runnable_job_event(data, message, dry_run, stage):
     )
 
     if builders_graph != {}:
-        mgr = TaskClusterBuildbotManager()
+        mgr = TaskClusterBuildbotManager(dry_run=dry_run)
         mgr.schedule_graph(
             repo_name=repo_name,
             revision=revision,
@@ -122,19 +118,6 @@ def on_runnable_job_event(data, message, dry_run, stage):
     else:
         LOG.info("We don't have anything to schedule through Buildapi")
 
-    # Send a pulse message showing what we did
-    message_sender = MessageHandler()
-    pulse_message = {
-        'resultset_id': resultset_id,
-        'graph': builders_graph,
-        'requester': requester,
-        'status': status}
-    routing_key = '{}.{}'.format(repo_name, 'runnable')
-    try:
-        message_sender.publish_message(pulse_message, routing_key)
-    except:
-        LOG.warning("Failed to publish message over pulse stream.")
-
-    if not dry_run:
+    if acknowledge:
         # We need to ack the message to remove it from our queue
         message.ack()
