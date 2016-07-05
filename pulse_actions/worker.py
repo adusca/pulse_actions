@@ -334,15 +334,16 @@ def route(data, message, **kwargs):
     else:
         LOG.error("Exchange not supported by router (%s)." % data)
 
-    if ignored(data):
-        exit_code = 0
-
-    elif post_to_treeherder:
+    if not post_to_treeherder:
         exit_code = handler(data=data, message=message, **kwargs)
 
         # XXX: Until handlers can guarantee an exit_code
         if exit_code is None:
             exit_code = 0
+
+    elif ignored(data):
+        LOG.debug("We're not going to process this message")
+        exit_code = 0
 
     else:
         # 1) Log request
