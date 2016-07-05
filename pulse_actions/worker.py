@@ -308,11 +308,8 @@ def route(data, message, **kwargs):
 
     We return if the request was processed successfully or not
     '''
-    # XXX: This allows us to ignore certain handlers. A cleaner code is wanted.
-    def _ignore_hack(data):
-        return True
-
     exit_code = None
+    post_to_treeherder = None
 
     # XXX: This is not ideal; we should define in the config which exchange uses which handler
     # XXX: Specify here which treeherder host
@@ -329,8 +326,9 @@ def route(data, message, **kwargs):
         handler = treeherder_push_action.on_event
 
     elif data['_meta']['exchange'] == 'exchange/build/normalized':
-        # XXX: We want to ignore this handler
-        ignored = _ignore_hack
+        # XXX: Maybe this information could be configured per handler
+        post_to_treeherder = False
+        ignored = talos_pgo_jobs.ignored
         handler = talos_pgo_jobs.on_event
 
     else:
@@ -338,6 +336,13 @@ def route(data, message, **kwargs):
 
     if ignored(data):
         exit_code = 0
+
+    elif post_to_treeherder:
+        exit_code = handler(data=data, message=message, **kwargs)
+
+        # XXX: Until handlers can guarantee an exit_code
+        if exit_code is None:
+            exit_code = 0
 
     else:
         # 1) Log request
