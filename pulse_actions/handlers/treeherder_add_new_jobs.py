@@ -47,7 +47,13 @@ def on_event(data, message, dry_run, treeherder_server_url, acknowledge, **kwarg
         return -1
 
     # These are there as blank strings in non-try pulse messages
-    decision_task_id = data["decisionTaskID"]
+    if 'decisionTaskID' in data:
+        decision_task_id = data['decisionTaskID']
+    elif 'decision_task_id' in data:
+        decision_task_id = data['decision_task_id']
+    else:
+        LOG.error('The pulse message did not contain the decision task ID.')
+        return -1
 
     resultset = treeherder_client.get_resultsets(repo_name, id=resultset_id)[0]
     revision = resultset["revision"]
